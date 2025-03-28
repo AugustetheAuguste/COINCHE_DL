@@ -3,11 +3,18 @@ class Team:
         self.team_id = team_id
         self.game_score = 0
         self.round_score = 0
+        self.belote = 0
         self.players = []  # Will contain references to Player objects
     
     def add_player(self, player):
         self.players.append(player)
         player.team = self
+
+    def set_belote(self , nbr):
+        self.belote = nbr
+
+    def get_belote(self):
+        return self.belote
 
     def get_id(self):
         return self.team_id

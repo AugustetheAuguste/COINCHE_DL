@@ -1,5 +1,6 @@
+from annonce_suit import Annonce
 from game import CoinceGame
-from utils import Suit
+from utils import Card, Rank, Suit
 
 
 class MainCoinche:
@@ -14,6 +15,7 @@ class MainCoinche:
             self.game.deal_card(self.game.current_player, [3, 2, 3])
             player = self.game.current_player
             self.game.table.set_current_player(player)
+
             while not self.game.announce_finish(player):
                 self.annonce(player)
                 player = (player + 1) % 4
@@ -22,10 +24,33 @@ class MainCoinche:
                     self.game.deal_card(self.game.current_player, [3, 2, 3])
                     player = self.game.current_player
             print(f"Annonce terminée ! Annonce finale : {self.game.table.get_current_bid().to_string()}")
+
+            print("Annonce of card suit !")
+            for _ in range(4):
+                self.annonce_suit(player)
+                player = (player + 1) % 4
+            if self.game.table.get_current_bid().get_suit() is not None:
+                print(f"Annonce de Suite terminée ! Annonce finale : {self.game.table.get_current_bid().get_suit().get_best_annonce()[2]} par le joueur {self.game.table.get_current_bid().get_suit().get_player()}")
+            
+            print(self.game.table.get_current_bid().get_trump_suit())
+            player_order = self.game.get_players_order(self.game.table.current_player)
+            if self.game.table.get_current_bid().get_suit():
+                player_suit = self.game.table.get_current_bid().get_suit().get_player()
+            else:
+                player_suit = None 
+            for player in player_order:
+                if player_suit and player.get_id() == player_suit:
+                    print(f"annonce du player {player_suit} : {self.game.table.get_current_bid().get_suit().get_best_annonce()[0]}")
+                self.play(player)
+            self.game.players[self.game.table.get_player_win()].get_team().add_round_score(self.game.table.get_points())
+            self.current_player = self.game.table.get_player_win()
+            self.game.table.plis_end()
+
             while not self.game.round_finish():
                 player_order = self.game.get_players_order(self.game.table.current_player)
                 for player in player_order:
                     self.play(player)
+                    
                 self.game.players[self.game.table.get_player_win()].get_team().add_round_score(self.game.table.get_points())
                 self.current_player = self.game.table.get_player_win()
                 self.game.table.plis_end()
@@ -64,9 +89,18 @@ class MainCoinche:
                 choix = int(input("Votre choix : "))
 
                 if 0 <= choix < len(legal_cards):
-                    card = player.play_card(legal_cards[choix])  # Retire la carte de la main du joueur
+                    if not self.game.get_belote():
+                        player_hand = [str(card) for card in player.get_card()]
+                        card = player.play_card(legal_cards[choix])  # Retire la carte de la main du joueur
+                        if card.rank.name in ["QUEEN","KING"] and card.suit.name == self.game.table.get_current_bid().get_trump_suit():
+                            if str(Card(Suit.from_str(self.game.table.get_current_bid().get_trump_suit()), Rank.QUEEN)) in player_hand and str(Card(Suit.from_str(self.game.table.get_current_bid().get_trump_suit()), Rank.KING)) in player_hand:
+                                print(f"Belote Rebelote for player {player.get_id()}")
+                                self.game.set_belote(True)
+                                player.get_team().set_belote(20)
+                    else:
+                        card = player.play_card(legal_cards[choix])  # Retire la carte de la main du joueur
                     self.game.table.play(card, player.get_id())  # Joue la carte sur la table
-                    print(f"Le joueur {player} a joué {card}")
+                    print(f"Le joueur {player.get_id()} a joué {card}")
                     break
                 else:
                     print("Choix invalide, veuillez entrer un nombre valide.")
@@ -126,6 +160,76 @@ class MainCoinche:
             self.game.table.announce((bid_value,bid_suit), player)
             print(f"Le joueur {player} a annoncé {(bid_value,bid_suit)}")
 
+            choice = ["Coinche","Passe"]
+            for i,choix in enumerate(choice):
+                print(f"{i} : {choix}")
+            while True:
+                try:
+                    choix = int(input("Votre choix : "))
+                    if 0 <= choix < len(choice):
+                        coinche = choice[choix]
+                        print(coinche)
+                        break
+                    else:
+                        print("Choix invalide, veuillez entrer un nombre valide.")
+                except ValueError:
+                    print("Entrée invalide, veuillez entrer un nombre.")
+            if coinche == "Coinche":
+                self.game.table.get_current_bid().coinche()
+                choice = ["SurCoinche","Passe"]
+                for i,choix in enumerate(choice):
+                    print(f"{i} : {choix}")
+                while True:
+                    try:
+                        choix = int(input("Votre choix : "))
+                        if 0 <= choix < len(choice):
+                            surcoinche = choice[choix]
+                            print(surcoinche)
+                            break
+                        else:
+                            print("Choix invalide, veuillez entrer un nombre valide.")
+                    except ValueError:
+                        print("Entrée invalide, veuillez entrer un nombre.")
+                if surcoinche == "SurCoinche":
+                    self.game.table.get_current_bid().surcoinche()
+
+    def annonce_suit(self, player):
+        annonce_suit = Annonce(self.game.players[player].get_card(), self.game.table.get_current_bid().get_trump_suit(), player)
+        annonce = annonce_suit.get_annonces()
+
+        if self.game.table.get_current_bid().get_suit() is not None:
+            for i, value in enumerate(annonce):
+                if value[1] < self.game.table.get_current_bid().get_suit().get_best_annonce()[1]:
+                    annonce.pop(i)
+
+        annonce.append("Passe")
+        if not annonce:
+            annonce = ["Passe"]
+
+        if len(annonce) != 1:
+            for i, value in enumerate(annonce):
+                print(f"{i}: {value}")
+
+            while True:
+                try:
+                    value_choice = int(input("Votre choix : "))
+                    if 0 <= value_choice < len(annonce):
+                        if annonce[value_choice] != "Passe":
+                            if self.game.table.get_current_bid().get_suit() is not None :
+                                if annonce[value_choice][1] == self.game.table.get_current_bid().get_suit().get_best_annonce()[1]:
+                                    ordre = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+                                    if ordre.index(annonce[value_choice][3]) < ordre.index(self.game.table.get_current_bid().get_suit().get_best_annonce()[3]):
+                                        break
+                            self.game.table.get_current_bid().set_suit(annonce_suit)
+                            self.game.table.get_current_bid().get_suit().set_best_annonce(annonce[value_choice])
+                            print(f"Le joueur {player} a annoncé {annonce[value_choice][2]}")
+                        break
+                    else:
+                        print("Choix invalide, veuillez entrer un nombre valide.")
+                except ValueError:
+                    print("Entrée invalide, veuillez entrer un nombre.")
+        else:
+            print(f"Le joueur {player} a annoncé {annonce[0]}")
 
 
 if __name__ == "__main__":

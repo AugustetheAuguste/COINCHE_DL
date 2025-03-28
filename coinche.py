@@ -34,6 +34,7 @@ class CoincheBid:
         self.player = player
         self.is_coinched = False
         self.is_surcoinched = False
+        self.suit = None
     
     def get_points(self):
         return self.points
@@ -44,6 +45,13 @@ class CoincheBid:
     def get_player(self):
         return self.player
     
+    def get_coef(self):
+        if self.is_coinched:
+            if self.is_surcoinched:
+                return 4
+            return 2
+        return 1
+    
     def coinche(self):
         self.is_coinched = True
 
@@ -53,7 +61,13 @@ class CoincheBid:
     def to_string(self):
         if self.trump_suit in ["Full_ASSET", "No_ASSET"]:
             return f"{self.points} points, atout {self.trump_suit}, joueur {self.player}"
-        return f"{self.points} points, atout {self.trump_suit.name}, joueur {self.player}"
+        return f"{self.points} points, atout {self.trump_suit}, joueur {self.player}"
+    
+    def get_suit(self):
+        return self.suit
+    
+    def set_suit(self, suit):
+        self.suit = suit
 
 class CoincheTable:
     NORMAL_POINTS = {
@@ -82,6 +96,7 @@ class CoincheTable:
 
     def __init__(self,player):
         self.Card = []
+        self.all_cards = []
         self.FirstCard = None
         self.best_card = None
         self.Player_win = None
@@ -97,6 +112,9 @@ class CoincheTable:
     
     def get_card(self):
         return self.Card
+    
+    def get_all_cards(self):
+        return self.all_cards
     
     def get_best_card(self):
         return self.best_card
@@ -119,6 +137,7 @@ class CoincheTable:
     def empty_cards(self):
         self.current_asset = None
         self.current_bid = None
+        self.all_cards = []
 
     def set_player_win(self, player):
         self.Player_win = player
@@ -148,7 +167,7 @@ class CoincheTable:
                 points += self.FULL_ASSET_POINTS[card.rank]
             elif self.current_asset == "No_ASSET":
                 points += self.FULL_NORMAL_POINTS[card.rank]
-            elif card.suit == self.current_asset:
+            elif card.suit.name == self.current_asset:
                 points += self.TRUMP_POINTS[card.rank]
             else:
                 points += self.NORMAL_POINTS[card.rank]
@@ -160,19 +179,20 @@ class CoincheTable:
             self.set_best_card(card)
             self.set_player_win(player)
         else:
-            if card.suit == self.current_asset:
-                if self.get_best_card().suit != self.current_asset:
+            if card.suit.name == self.current_asset:
+                if self.get_best_card().suit.name != self.current_asset:
                     self.set_best_card(card)
                     self.set_player_win(player)
                 elif self.TRUMP_POINTS[card.rank] > self.TRUMP_POINTS[self.best_card.rank]:
                     self.set_best_card(card)
                     self.set_player_win(player)
-            elif card.suit == self.get_best_card().suit:
+            elif card.suit.name == self.get_best_card().suit.name:
                 if self.NORMAL_POINTS[card.rank] > self.NORMAL_POINTS[self.best_card.rank]:
                     self.set_best_card(card)
                     self.set_player_win(player)
                 
         self.add_card(card)
+        self.all_cards.append(card)
 
     def announce(self, bid, player):
         self.set_current_bid(CoincheBid(bid[0], bid[1], player))

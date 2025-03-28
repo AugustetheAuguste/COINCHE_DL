@@ -8,6 +8,14 @@ class Suit(Enum):
     DIAMONDS = "♦"
     CLUBS = "♣"
 
+    @classmethod
+    def from_str(cls, valeur: str):
+        """ Convertit un string (nom ou symbole) en Suit """
+        for suit in cls:
+            if valeur.upper() == suit.name or valeur == suit.value:
+                return suit
+        raise ValueError(f"Suit invalide : {valeur}")
+
 class Rank(Enum):
     SEVEN = "7"
     EIGHT = "8"

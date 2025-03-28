@@ -36,6 +36,7 @@ class CoinceGame:
         self.teams = [Team(0), Team(1)]  # Create two teams
         self.current_player = 0 # Index of current player
         self.table = CoincheTable(0)
+        self.belote = False
         
         # Setup teams - players 0,2 are Team 0, players 1,3 are Team 1
         self.setup_teams()
@@ -88,6 +89,12 @@ class CoinceGame:
     def get_table(self):
         return self.table
     
+    def get_belote(self):
+        return self.belote
+    
+    def set_belote(self,bool):
+        self.belote = bool
+    
     def get_legal_cards(self, player):
 
         # If the player is the first to play, they can play any card
@@ -100,7 +107,9 @@ class CoinceGame:
             best_card = self.table.get_best_card()
             play_hand = [card for card in player.hand if self.FULL_ASSET_POINTS[card.rank] > self.FULL_ASSET_POINTS[best_card.rank] and card.suit == first_card.suit]
             if play_hand == []:
-                return player.hand
+                play_hand = [card for card in player.hand if card.suit == first_card.suit]
+                if play_hand == []:
+                    return player.hand
             return play_hand
         
         elif self.table.get_current_asset() == "No_ASSET":
@@ -118,11 +127,11 @@ class CoinceGame:
             asset_suit = self.table.get_current_asset()
             play_hand = [card for card in player.hand if card.suit == first_card.suit]
             if play_hand == []:
-                play_hand = [card for card in player.hand if card.suit == asset_suit]
+                play_hand = [card for card in player.hand if card.suit.name == asset_suit]
                 if play_hand == []:
                     return player.hand
-            if first_card.suit == asset_suit:
-                play_hand_asset = [card for card in player.hand if self.TRUMP_POINTS[card.rank] > self.TRUMP_POINTS[best_card.rank] and card.suit == asset_suit]
+            if first_card.suit.name == asset_suit:
+                play_hand_asset = [card for card in player.hand if self.TRUMP_POINTS[card.rank] > self.TRUMP_POINTS[best_card.rank] and card.suit.name == asset_suit]
                 if play_hand_asset != []:
                     return play_hand_asset
             return play_hand
@@ -148,7 +157,7 @@ class CoinceGame:
     
     def game_finish(self):
         for team in self.teams:
-            if team.get_game_score() >= 100:
+            if team.get_game_score() >= 50:
                 return True
         return False
     
@@ -162,11 +171,24 @@ class CoinceGame:
     def round_end(self):
         point_bid = self.table.get_current_bid().get_points()
         team_bid = self.players[self.table.get_current_bid().get_player()].get_team().get_id()
-        if self.teams[team_bid].get_round_score()  >= point_bid and self.teams[team_bid].get_round_score()  >= 82:
-            self.teams[team_bid].add_game_score(self.teams[team_bid].get_round_score() + point_bid)
-            self.teams[(team_bid+1)%2].add_game_score(self.teams[(team_bid+1)%2].get_round_score() )
+        point_suit = self.table.get_current_bid().get_suit()
+        coef_coinche = self.table.get_current_bid().get_coef()
+        if point_suit:
+            point_suit = point_suit.get_best_annonce()[1]
+            team_suit = self.players[self.table.get_current_bid().get_suit().get_player()].get_team().get_id()
+            if team_bid == team_suit:
+                point_bid += point_suit
+                point_suit = 0
         else:
-            self.teams[(team_bid+1)%2].add_game_score(160 + point_bid)
+            point_suit = 0
+        if (self.teams[team_bid].get_round_score()+self.teams[team_bid].get_belote())  >= point_bid and self.teams[team_bid].get_round_score()  >= 82:
+            self.teams[team_bid].add_game_score((self.teams[team_bid].get_round_score() + point_bid + self.teams[team_bid].get_belote())*coef_coinche)
+            self.teams[(team_bid+1)%2].add_game_score((self.teams[(team_bid+1)%2].get_round_score() + point_suit + self.teams[(team_bid+1)%2].get_belote())*coef_coinche)
+        else:
+            self.teams[(team_bid+1)%2].add_game_score((160 + point_bid + point_suit + self.teams[(team_bid+1)%2].get_belote())*coef_coinche)
+        self.belote = False
+        for team in self.teams:
+            team.set_belote(0)
         return team_bid,self.teams[team_bid].get_round_score()  >= point_bid
             
                 
