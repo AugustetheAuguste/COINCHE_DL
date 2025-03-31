@@ -32,7 +32,6 @@ class Annonce:
         for suit, ranks in cartes_par_couleur.items():
             indices = sorted([ordre.index(rank) for rank in ranks if rank in ordre])
             longest_suite = self.trouver_suite(indices)
-            print(f"=============================== {longest_suite}")
             if longest_suite in self.VALEURS_SUITE:
                 annonces.append((f"{[ordre[i].value for i in indices[:longest_suite]]} dans {suit.value}", self.VALEURS_SUITE[longest_suite], f"suite de {longest_suite}", ordre[indices[:longest_suite][-1]].value))
         

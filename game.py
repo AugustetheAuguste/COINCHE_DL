@@ -127,6 +127,8 @@ class CoinceGame:
             asset_suit = self.table.get_current_asset()
             play_hand = [card for card in player.hand if card.suit == first_card.suit]
             if play_hand == []:
+                if self.table.get_player_win() == (player.get_id()+2)%4:
+                    return player.hand
                 if best_card.suit.name == asset_suit:
                     play_hand = [card for card in player.hand if self.TRUMP_POINTS[card.rank] > self.TRUMP_POINTS[best_card.rank] and card.suit.name == asset_suit]
                     if play_hand != []:

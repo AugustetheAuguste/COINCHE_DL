@@ -2,7 +2,7 @@ import gym
 import time
 import numpy as np
 from stable_baselines3 import PPO
-from modele_jeu_IV import CoincheEnv
+from modele_jeu_v2 import CoincheEnv
 
 def train_agent():
     """Entraîne l'IA à jouer à la Coinche."""
@@ -10,8 +10,8 @@ def train_agent():
     model = PPO("MlpPolicy", env, verbose=1)
 
     print("Démarrage de l'entraînement...")
-    model.learn(total_timesteps=1000000, log_interval=None)  # Ajuster selon la puissance de calcul
-    model.save("coinche_ia")
+    model.learn(total_timesteps=10000, log_interval=None)  # Ajuster selon la puissance de calcul
+    model.save("coinche_ia_v2")
 
     print("Entraînement terminé !")
 
