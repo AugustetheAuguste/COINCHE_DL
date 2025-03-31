@@ -13,6 +13,10 @@ class CoincheEnv(gym.Env):
         self.suit = ["SPADES", "HEARTS", "DIAMONDS", "CLUBS", "No_ASSET","Full_ASSET"]
         self.rank = ["7", "8", "9", "10", "J", "Q", "K", "A"]
         self.current_player = 0
+        self.history = []
+        self.flag = False
+        self.points_team = [0,0]
+
         # Définition des espaces d'observation et d'action
         self.observation_space = spaces.Box(low=0, high=1, shape=(48,), dtype=np.float32)  # Représentation des cartes en main
         self.action_space = spaces.Discrete(8)  # Nombre total d'actions possibles (annonces, jeux de cartes, etc.)
@@ -90,57 +94,62 @@ class CoincheEnv(gym.Env):
     def step(self, action):
 
         """Exécute une action et met à jour l'état du jeu."""
-        
-        legal_cards = self.game.get_legal_cards(self.game.players[self.current_player])
-        
-        # Vérifier que l'action correspond bien à une carte légale
-        if action >= len(self.game.players[self.current_player].get_card()):
-            reward = -10  # Pénalité pour action hors limite
-            return self.get_observation(), reward, False, {}
-        
-        chosen_card = self.game.players[self.current_player].get_card()[action]
-
-        if chosen_card not in legal_cards:
-            reward = -10  # Pénalité pour action illégale
-            return self.get_observation(), reward, False, {}
-
-        # Jouer la carte si valide
-        self.game.players[self.current_player].play_card(chosen_card)
-        self.game.table.play(chosen_card, self.current_player)
-
-        reward = 0
-        winning_player = self.game.table.get_player_win()
-        if winning_player == self.current_player:
-            if len(self.game.table.get_card()) == 4:
-                reward = 10
-            else:
-                reward = 5
-        elif self.game.players[self.current_player].get_team() == self.game.players[winning_player].get_team():
-            reward = self.evaluate_card(chosen_card)
+        if self.game.game_finish() and self.flag:
+            reward = self.points_team[self.current_player%2]
+            self.current_player = (self.current_player + 1) % 4
+            if self.game.table.current_player == self.current_player:
+                self.flag = False
+                obs = self.history[-1][0]
+                self.history.clear() 
+                return obs, reward, True, {}
+            return self.history[-1][0], reward, False, {}
         else:
-            reward = - self.evaluate_card(chosen_card,coef=2)
         
-        self.current_player = (self.current_player + 1) % 4
-        if self.game.table.current_player == self.current_player:
-            self.game.players[self.game.table.get_player_win()].get_team().add_round_score(self.game.table.get_points())
-            self.current_player = winning_player
-            self.game.table.plis_end()
-        
-        if self.game.round_finish():
-            self.game.players[self.game.table.get_current_player()].get_team().add_round_score(10)
-            _,_ = self.game.round_end()
-            self.game.table.empty_cards()
-            self.game.deck.cut()
-            self.game.deal_card(self.current_player, [3, 2, 3])
-            self.set_bid()
-            self.current_player = self.game.current_player
-            self.game.table.set_current_player(self.current_player)
-    
-        # reward = self.compute_reward(self.current_player)
-        done = self.game.game_finish()
-        
-        return self.get_observation(), reward, done, {}
+            legal_cards = self.game.get_legal_cards(self.game.players[self.current_player])
+            
+            # Vérifier que l'action correspond bien à une carte légale
+            if action >= len(self.game.players[self.current_player].get_card()):
+                reward = -10  # Pénalité pour action hors limite
+                return self.get_observation(), reward, False, {}
+            
+            chosen_card = self.game.players[self.current_player].get_card()[action]
 
+            if chosen_card not in legal_cards:
+                reward = -10  # Pénalité pour action illégale
+                return self.get_observation(), reward, False, {}
+
+            # 🛑 Stocker l'état et l'action dans l'historique
+            self.history.append((self.get_observation(), action))
+
+            # Jouer la carte
+            self.game.players[self.current_player].play_card(chosen_card)
+            self.game.table.play(chosen_card, self.current_player)
+            
+            self.current_player = (self.current_player + 1) % 4
+            if self.game.table.current_player == self.current_player:
+                self.game.players[self.game.table.get_player_win()].get_team().add_round_score(self.game.table.get_points())
+                self.current_player = self.game.table.get_player_win()
+                self.game.table.plis_end()
+            
+            if self.game.round_finish():
+                if not self.flag:
+                    self.game.players[self.game.table.get_current_player()].get_team().add_round_score(10)
+                    self.points_team[0] = self.game.players[0].get_team().get_round_score()
+                    self.points_team[1] = self.game.players[1].get_team().get_round_score() 
+                    _,_ = self.game.round_end()
+                    self.game.table.empty_cards()
+                    self.game.deck.cut()
+                    self.game.deal_card(self.current_player, [3, 2, 3])
+                    self.set_bid()
+                    self.current_player = self.game.current_player
+                    self.game.table.set_current_player(self.current_player)
+                    self.flag = True
+        
+            # reward = self.compute_reward(self.current_player)
+            # done = self.game.game_finish()
+            
+            return self.get_observation(), 0, False, {}
+    
     def compute_reward(self,player):
         """Calcule une récompense pour l'IA en fonction de l'état du jeu."""
         team_score = self.game.players[player].get_team().get_round_score()  # Score de l'équipe de l'IA

@@ -16,6 +16,7 @@ class CoincheEnv(gym.Env):
         # Définition des espaces d'observation et d'action
         self.observation_space = spaces.Box(low=0, high=1, shape=(48,), dtype=np.float32)  # Représentation des cartes en main
         self.action_space = spaces.Discrete(8)  # Nombre total d'actions possibles (annonces, jeux de cartes, etc.)
+        self.history = []
 
         self.reset()
 
@@ -104,6 +105,8 @@ class CoincheEnv(gym.Env):
             reward = -10  # Pénalité pour action illégale
             return self.get_observation(), reward, False, {}
 
+        self.history.append((self.get_observation(), action, chosen_card))
+            
         # Jouer la carte si valide
         self.game.players[self.current_player].play_card(chosen_card)
         self.game.table.play(chosen_card, self.current_player)
