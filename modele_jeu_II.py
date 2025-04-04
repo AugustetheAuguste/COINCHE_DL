@@ -161,12 +161,3 @@ class CoincheEnv(gym.Env):
         else:
             return values[card.rank.value] / coef
     
-if __name__ == "__main__":
-    env = CoincheEnv()
-    obs = env.reset()
-    done = False
-
-    while not done:
-        action = env.action_space.sample()  # Action aléatoire pour tester
-        obs, reward, done, _ = env.step(action)
-        env.render()

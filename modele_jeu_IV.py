@@ -109,13 +109,13 @@ class CoincheEnv(gym.Env):
             
             # Vérifier que l'action correspond bien à une carte légale
             if action >= len(self.game.players[self.current_player].get_card()):
-                reward = -10  # Pénalité pour action hors limite
+                reward = -100  # Pénalité pour action hors limite
                 return self.get_observation(), reward, False, {}
             
             chosen_card = self.game.players[self.current_player].get_card()[action]
 
             if chosen_card not in legal_cards:
-                reward = -10  # Pénalité pour action illégale
+                reward = -100  # Pénalité pour action illégale
                 return self.get_observation(), reward, False, {}
 
             # 🛑 Stocker l'état et l'action dans l'historique
@@ -179,12 +179,3 @@ class CoincheEnv(gym.Env):
         else:
             return values[card.rank.value] / coef
     
-if __name__ == "__main__":
-    env = CoincheEnv()
-    obs = env.reset()
-    done = False
-
-    while not done:
-        action = env.action_space.sample()  # Action aléatoire pour tester
-        obs, reward, done, _ = env.step(action)
-        env.render()

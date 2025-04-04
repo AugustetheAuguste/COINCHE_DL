@@ -165,13 +165,3 @@ class CoincheEnv(gym.Env):
         """Affichage pour déboguer."""
         # print(f"État du jeu : {self.get_observation()}")
 
-
-if __name__ == "__main__":
-    env = CoincheEnv()
-    obs = env.reset()
-    done = False
-
-    while not done:
-        action = env.action_space.sample()  # Action aléatoire pour tester
-        obs, reward, done, _ = env.step(action)
-        env.render()

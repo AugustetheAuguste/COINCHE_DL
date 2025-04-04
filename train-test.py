@@ -3,42 +3,72 @@ import time
 import numpy as np
 from stable_baselines3 import PPO
 from modele_jeu_v2 import CoincheEnv
+from stable_baselines3.common.policies import ActorCriticPolicy
+from stable_baselines3.common.evaluation import evaluate_policy
 
 def train_agent():
     """Entraîne l'IA à jouer à la Coinche."""
     env = CoincheEnv()
-    model = PPO("MlpPolicy", env, verbose=1)
+    model = PPO(
+        "MlpPolicy",
+        env,
+        verbose=1,
+        tensorboard_log="./ppo_coinche_logs/",
+        gamma=0.99,               # Prise en compte plus longue des récompenses futures
+        n_steps=4096,             # Collecte plus de transitions avant mise à jour
+        batch_size=512,           # Mini-batchs plus grands pour une meilleure généralisation
+        learning_rate=3e-4,       # Ajustable selon la stabilité
+        ent_coef=0.01,            # Encourage l'exploration
+        clip_range=0.1,           # Moins de restrictions pour une adaptation plus rapide
+        gae_lambda=0.95,          # Réduction de la variance pour le calcul des avantages
+        vf_coef=0.5,              # Importance du réseau de valeur
+        max_grad_norm=0.5,        # Empêche les gradients explosifs
+        target_kl=0.03,           # Réduction plus rapide du taux d’apprentissage
+        policy_kwargs = {"net_arch": [256, 256, 128]}
+    )
 
     print("Démarrage de l'entraînement...")
-    model.learn(total_timesteps=10000, log_interval=None)  # Ajuster selon la puissance de calcul
+    model.learn(total_timesteps=1000000, log_interval=None)  # Ajuster selon la puissance de calcul
     model.save("coinche_ia_v2")
+    # for i in range(10):
+    #     model.learn(total_timesteps=500_000)
+    #     model.save(f"coinche_ia_v2_{i}")
+
 
     print("Entraînement terminé !")
 
 def test_agent():
     """Teste l'IA après entraînement."""
     env = CoincheEnv()
-    model = PPO.load("coinche_ia")
+    model = PPO.load("coinche_ia_v2")
 
+    # mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10, deterministic=True)
+    # print(f"Récompense moyenne : {mean_reward} ± {std_reward}")
     obs = env.reset()
     done = False
     for player in env.game.players:
         print([str(card) for card in player.get_card()])
     print(env.game.table.get_current_bid().get_trump_suit())
     print(env.game.table.get_current_bid().get_player())
-    tour = 0
+    # tour = 0
+    err = 0
     while not done:
         action, _states = model.predict(obs)
-        obs, reward, done, _ = env.step(action)
-        if reward != -10:
-            tour+=1
-        if tour == 4:
-            tour = 0
-            print("carte joué : ",env.current_player,[str(card) for card in env.game.table.get_all_cards()[-4:]])
-            for player in env.game.players:
-                print([str(card) for card in player.get_card()])
+        obs, reward, done, _ = env.step(action,training=False)
+        if reward == -50:
+            err += 1
+        # print(len(env.order),len(env.game.table.get_all_cards()))
+        # print([str(card) for card in env.order])
+        # print([str(card) for card in env.game.table.get_all_cards()])
+        #     tour+=1
+        # if tour == 4:
+        #     tour = 0
+        #     print("carte joué : ",env.current_player,[str(card) for card in env.game.table.get_all_cards()[-4:]])
+        #     for player in env.game.players:
+        #         print([str(card) for card in player.get_card()])
         env.render()
         # time.sleep(1)
+    print(f"Erreur : {err}")
 
 def choose_valid_action(model, obs, legal_actions):
     action, _ = model.predict(obs)  # Prédiction brute
