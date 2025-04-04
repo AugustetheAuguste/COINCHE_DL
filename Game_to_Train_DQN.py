@@ -14,6 +14,12 @@ class MainCoincheAI:
         self.game = CoinceGame()
         self.agent = DQNAgent(state_size=state_size, action_size=action_size)
 
+    def reset_game(self):
+        """Réinitialise le jeu."""
+        self.game = CoinceGame()
+        self.game.shuffle_deck()
+        self.game.table.set_current_player(self.game.current_player)
+
     def start_game(self):
         self.game.shuffle_deck()
 
@@ -176,11 +182,11 @@ if __name__ == "__main__":
     for episode in range(episodes):
         total_reward = 0
         for game_count in range(games_per_episode):
-            game_ai.game.shuffle_deck()
             sleep(1)
             game_ai.start_game()  # Démarre une partie complète
             # Ici, vous pouvez ajouter du code pour récupérer et cumuler les récompenses ou scores de la partie
             total_reward += game_ai.game.teams[0].get_round_score() - game_ai.game.teams[1].get_round_score()
+            game_ai.reset_game()
             sleep(2)
 
         # Mise à jour de l'agent sur l'ensemble des expériences collectées pendant cet épisode.
