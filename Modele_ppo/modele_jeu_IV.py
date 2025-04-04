@@ -2,8 +2,8 @@ from random import randint
 import gym
 import numpy as np
 from gym import spaces
-from game import CoinceGame
-from utils import Card, Rank, Suit
+from Environnement.game import CoinceGame
+from Environnement.utils import Card, Rank, Suit
 
 class CoincheEnv(gym.Env):
     def __init__(self):

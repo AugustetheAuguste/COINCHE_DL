@@ -1,7 +1,7 @@
 import random
 from typing import List, Optional, Tuple
-from player import Player
-from utils import Card, Rank, Suit
+from Environnement.player import Player
+from Environnement.utils import Card, Rank, Suit
 
 
 class CoincheDeck:

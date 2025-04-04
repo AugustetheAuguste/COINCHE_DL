@@ -1,6 +1,6 @@
 from typing import List
 
-from utils import Card
+from Environnement.utils import Card
 
 class Player:
     def __init__(self, position: int):

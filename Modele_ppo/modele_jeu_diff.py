@@ -2,8 +2,8 @@ from random import randint
 import gym
 import numpy as np
 from gym import spaces
-from game import CoinceGame
-from utils import Card, Rank, Suit
+from Environnement.game import CoinceGame
+from Environnement.utils import Card, Rank, Suit
 
 class CoincheEnv(gym.Env):
     def __init__(self):
@@ -16,6 +16,7 @@ class CoincheEnv(gym.Env):
         # Définition des espaces d'observation et d'action
         self.observation_space = spaces.Box(low=0, high=1, shape=(48,), dtype=np.float32)  # Représentation des cartes en main
         self.action_space = spaces.Discrete(8)  # Nombre total d'actions possibles (annonces, jeux de cartes, etc.)
+        self.history = []
 
         self.reset()
 
@@ -104,27 +105,40 @@ class CoincheEnv(gym.Env):
             reward = -10  # Pénalité pour action illégale
             return self.get_observation(), reward, False, {}
 
+        self.history.append((self.get_observation(), action, chosen_card))
+            
         # Jouer la carte si valide
         self.game.players[self.current_player].play_card(chosen_card)
         self.game.table.play(chosen_card, self.current_player)
-
-        reward = 0
-        winning_player = self.game.table.get_player_win()
-        if winning_player == self.current_player:
-            if len(self.game.table.get_card()) == 4:
-                reward = 10
-            else:
-                reward = 5
-        elif self.game.players[self.current_player].get_team() == self.game.players[winning_player].get_team():
-            reward = self.evaluate_card(chosen_card)
-        else:
-            reward = - self.evaluate_card(chosen_card,coef=2)
-        
         self.current_player = (self.current_player + 1) % 4
-        if self.game.table.current_player == self.current_player:
+
+        reward = 0  # 🛑 Pas de récompense immédiate tant que le pli n'est pas fini
+
+        # 1️⃣ Si le pli est terminé (4 cartes jouées), attribuer la récompense différée
+        if len(self.game.table.get_card()) == 4:
             self.game.players[self.game.table.get_player_win()].get_team().add_round_score(self.game.table.get_points())
-            self.current_player = winning_player
+            winning_player = self.game.table.get_player_win()
+            winning_team = winning_player % 2
+            my_team = self.current_player % 2
+
+            # 🎯 **Récompenses dynamiques basées sur les cartes**
+            rewards = []
+
+            for state, action, card in self.history:
+                if self.game.players[self.current_player].get_team() == winning_team:
+                    card_strength = self.evaluate_card(card)  # Score de la carte
+                    reward = 0.5 + 0.5 * card_strength  # Plus forte = plus récompensée
+                else:
+                    reward = -0.5  # Malus si on perd le pli
+                rewards.append((state, action, reward))
+
+            self.current_player = winning_player  # Le gagnant commence le prochain pli
             self.game.table.plis_end()
+
+            # 🏆 Donner les récompenses calculées
+            final_state, final_action, final_reward = rewards.pop(0)
+            self.history.clear()
+            return final_state, final_reward, False, {}
         
         if self.game.round_finish():
             self.game.players[self.game.table.get_current_player()].get_team().add_round_score(10)
@@ -136,7 +150,7 @@ class CoincheEnv(gym.Env):
             self.current_player = self.game.current_player
             self.game.table.set_current_player(self.current_player)
     
-        # reward = self.compute_reward(self.current_player)
+        reward = self.compute_reward(self.current_player)
         done = self.game.game_finish()
         
         return self.get_observation(), reward, done, {}
@@ -151,16 +165,7 @@ class CoincheEnv(gym.Env):
         """Affichage pour déboguer."""
         # print(f"État du jeu : {self.get_observation()}")
 
-    def evaluate_card(self, card, coef = 3):
-        """Donne un score à une carte selon sa puissance dans le jeu."""
-        values = {"7": 0, "8": 0, "9": 0, "J": 2, "Q": 3, "K": 4,"10":10, "A": 11}
-        values_asset = {"7": 0, "8": 0, "9": 14, "J": 20, "Q": 3, "K": 4,"10":10, "A": 11}
 
-        if card.suit.name == self.game.table.get_current_asset():
-            return values_asset[card.rank.value] / coef
-        else:
-            return values[card.rank.value] / coef
-    
 if __name__ == "__main__":
     env = CoincheEnv()
     obs = env.reset()

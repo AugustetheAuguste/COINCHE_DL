@@ -1,8 +1,8 @@
-import gym
+
 import time
 import numpy as np
 from stable_baselines3 import PPO
-from modele_jeu_v2 import CoincheEnv
+from Modele.modele_jeu_v2 import CoincheEnv
 
 def train_agent():
     """Entraîne l'IA à jouer à la Coinche."""
