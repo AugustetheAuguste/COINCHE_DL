@@ -163,7 +163,7 @@ class CoinceGame:
     
     def game_finish(self):
         for team in self.teams:
-            if team.get_game_score() >= 50:
+            if team.get_game_score() >= 2000:
                 return True
         return False
     
