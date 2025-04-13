@@ -175,7 +175,7 @@ class CoincheEnv(gym.Env):
         if self.game.round_finish():
             obs = self.get_observation()
             self.game.players[self.game.table.get_current_player()].get_team().add_round_score(10)
-            reward = 2 * self.game.players[self.train_player].get_team().get_round_score() - self.game.players[(self.train_player+1)%2].get_team().get_round_score()
+            reward = 5 * self.game.players[self.train_player].get_team().get_round_score() - self.game.players[(self.train_player+1)%2].get_team().get_round_score()
             _, _ = self.game.round_end()
             self.game.table.empty_cards()
             self.game.deck.cut()

@@ -24,7 +24,7 @@ def train_agent():
         gae_lambda=0.95,          
         vf_coef=0.5,              
         max_grad_norm=0.5,        
-        # target_kl=0.1,           
+        # target_kl=0.1,
         policy_kwargs={
             "net_arch": [256, 256],  # Réseau de neurones pour les couches denses
             "lstm_hidden_size": 128,  # Taille du LSTM
@@ -34,7 +34,7 @@ def train_agent():
     )
 
     print("Démarrage de l'entraînement...")
-    model.learn(total_timesteps=1000000, log_interval=None)  # Ajuster selon la puissance de calcul
+    model.learn(total_timesteps=5000000, log_interval=None)  # Ajuster selon la puissance de calcul
     model.save("coinche_ia_v2")
     # for i in range(10):
     #     model.learn(total_timesteps=500_000)
