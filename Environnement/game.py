@@ -168,8 +168,8 @@ class CoinceGame:
         return False
     
     def announce_finish(self, player):
-        if self.table.current_bid is not None:
-            print(self.table.current_bid.get_player() , player)
+        # if self.table.current_bid is not None:
+        #     print(self.table.current_bid.get_player() , player)
         if self.table.current_bid is not None and self.table.current_bid.get_player() == player:
             return True
         return False
@@ -196,6 +196,10 @@ class CoinceGame:
         for team in self.teams:
             team.set_belote(0)
         return team_bid,self.teams[team_bid].get_round_score()  >= point_bid
+    
+    def reset_round_score(self):
+        for team in self.teams:
+            team.reset_round_score()
             
                 
 
