@@ -57,12 +57,13 @@ class MainCoincheAI:
 
         if self.training:
             for player in range(4):
+                reward = self.calculate_reward(player, self.list_annonce[player][0][0])
                 self.agent.remember(self.list_annonce[player][1], 
                                     self.list_annonce[player][4], 
-                                    self.calculate_reward(player, self.list_annonce[player][0][0]),
+                                    reward,
                                     self.list_annonce[player][2], 
                                     self.list_annonce[player][3])
-        
+
         team, win = self.game.round_end()
         self.game.reset_round_score()
         if not self.training:
@@ -168,41 +169,27 @@ class MainCoincheAI:
         return suits[card.suit.name] * 8 + ranks[card.rank.name]
 
     def calculate_reward(self, player, bid_value):
-        """
-        Calcule une récompense basée sur :
-        - la validité de l'annonce
-        - si elle a été sélectionnée comme contrat final
-        - si le contrat a été réussi
-        - et les points réellement gagnés
-        """
-        if bid_value == "Passe":
-            return -0.5  # Petite pénalité pour éviter de toujours passer (à ajuster)
+        if bid_value == "P":
+            return 0  # Neutre si passe
 
         last_bid = self.game.table.get_current_bid()
-
-        # Si l'annonce n'est pas celle qui a été retenue (pas l'annonce finale)
-        if last_bid.get_player() not in (player,(player+2)%4):
-            return -1  # Pénalité douce pour les annonces non retenues (ou 0 si neutre)
-        
-        if last_bid.get_player() == (player+2)%4:
-            return 1 
+        if last_bid.get_player() != player:
+            return -0.2  # Petite pénalité pour annonce inutile
 
         team = self.game.players[player].get_team()
         team_score = team.get_round_score()
         contrat = last_bid.get_points()
 
-        # Distance entre contrat annoncé et points réalisés
-        distance = abs(team_score - contrat)
+        overbid = contrat - team_score
 
         # Contrat réussi
         if team_score >= contrat:
-            # Récompense maximale si on fait exactement le contrat
-            reward = 15 - (distance / 10)  # Diminue légèrement si on dépasse trop
-            return max(reward, 5.0)  # Assure une récompense minimale décente
+            # Plus c’est proche, mieux c’est (évite les gros contrats inutiles)
+            return 5 - (overbid / 10)
         else:
-            # Contrat raté, pénalité plus forte si on est loin
-            penalty = 5 + (distance / 10)
-            return -penalty
+            # Contrat raté : pénalité croissante avec l’écart
+            return -2 - (abs(overbid) / 10)
+
 
     def save_model(self, filepath="dqn_model.pth"):
         """Sauvegarde le modèle DQN."""
@@ -290,13 +277,14 @@ class Modele_jeu:
 if __name__ == "__main__":
     game_ai = MainCoincheAI()   
 
-    episodes = 100000
+    episodes = 5000
     games_per_episode = 10  # Nombre de parties par épisode
 
     print("Phase de training")
 
     for episode in range(episodes):
-        episode_reward = 0
+        if episode % 100 == 0:
+            print(f"Épisode {episode}/{episodes}")
 
         for game_count in range(games_per_episode):
             game_ai.start_game()
@@ -312,3 +300,14 @@ if __name__ == "__main__":
 
     # Sauvegarde du modèle
     game_ai.save_model("dqn_model.pth")
+
+    # # Crée l'instance de l'IA avec le training désactivé
+    # game_ai = MainCoincheAI(training=False)
+
+    # # Charge le modèle DQN déjà entraîné
+    # game_ai.agent.model.load_state_dict(torch.load("dqn_5K-10.pth", map_location=torch.device('cpu')))
+    # game_ai.agent.model.eval()  # Mode évaluation pour éviter le dropout, etc.
+
+    # # Lancer une partie avec affichage des annonces
+    # print("Test du modèle DQN pour les annonces...")
+    # game_ai.start_game()
