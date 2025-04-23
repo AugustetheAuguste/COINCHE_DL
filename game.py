@@ -196,6 +196,10 @@ class CoinceGame:
         for team in self.teams:
             team.set_belote(0)
         return team_bid,self.teams[team_bid].get_round_score()  >= point_bid
+    
+    def reset_round_score(self):
+        for team in self.teams:
+            team.reset_round_score()
             
                 
 

@@ -15,6 +15,7 @@ def train_agent():
         "MlpLstmPolicy",  # ✅ Utiliser la politique LSTM
         env,
         verbose=1,
+        tensorboard_log="./ppo_coinche_logs",
         gamma=0.99,               
         n_steps=512,              # ⚠️ Doit être un multiple de batch_size
         batch_size=128,           # ⚠️ Doit être ≤ n_steps
@@ -34,7 +35,7 @@ def train_agent():
     )
 
     print("Démarrage de l'entraînement...")
-    model.learn(total_timesteps=5000000, log_interval=None)  # Ajuster selon la puissance de calcul
+    model.learn(total_timesteps=1000000, tb_log_name="PPO_1", log_interval=None)  # Ajuster selon la puissance de calcul
     model.save("coinche_ia_v2")
     # for i in range(10):
     #     model.learn(total_timesteps=500_000)
@@ -55,24 +56,14 @@ def test_agent():
         print([str(card) for card in player.get_card()])
     print(env.game.table.get_current_bid().get_trump_suit())
     print(env.game.table.get_current_bid().get_player())
-    # tour = 0
+    
     err = 0
     while not done:
         action, _states = model.predict(obs)
         obs, reward, done, _ = env.step(action,training=False)
         if reward == -50:
             err += 1
-        # print(len(env.order),len(env.game.table.get_all_cards()))
-        # print([str(card) for card in env.order])
-        # print([str(card) for card in env.game.table.get_all_cards()])
-        #     tour+=1
-        # if tour == 4:
-        #     tour = 0
-        #     print("carte joué : ",env.current_player,[str(card) for card in env.game.table.get_all_cards()[-4:]])
-        #     for player in env.game.players:
-        #         print([str(card) for card in player.get_card()])
         env.render()
-        # time.sleep(1)
     print(f"Erreur : {err}")
 
 def choose_valid_action(model, obs, legal_actions):
@@ -80,7 +71,7 @@ def choose_valid_action(model, obs, legal_actions):
 
     # Vérifier si l'action est valide
     if action not in legal_actions:
-        action = np.random.choice(legal_actions)  # Sélectionner une action valide au hasard
+        action = np.random.choice(legal_actions)  
     
     return action
 

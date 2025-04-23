@@ -177,6 +177,7 @@ class CoincheEnv(gym.Env):
             self.game.players[self.game.table.get_current_player()].get_team().add_round_score(10)
             reward = 5 * self.game.players[self.train_player].get_team().get_round_score() - self.game.players[(self.train_player+1)%2].get_team().get_round_score()
             _, _ = self.game.round_end()
+            self.game.reset_round_score()
             self.game.table.empty_cards()
             self.game.deck.cut()
             self.game.deal_card(self.current_player, [3, 2, 3])
