@@ -2,8 +2,8 @@ from random import randint
 import gym
 import numpy as np
 from gym import spaces
-from Environnement.game import CoinceGame
-from Environnement.utils import Card, Rank, Suit
+from game import CoinceGame
+from utils import Card, Rank, Suit
 
 class CoincheEnv(gym.Env):
     def __init__(self):
@@ -161,12 +161,3 @@ class CoincheEnv(gym.Env):
         else:
             return values[card.rank.value] / coef
     
-if __name__ == "__main__":
-    env = CoincheEnv()
-    obs = env.reset()
-    done = False
-
-    while not done:
-        action = env.action_space.sample()  # Action aléatoire pour tester
-        obs, reward, done, _ = env.step(action)
-        env.render()

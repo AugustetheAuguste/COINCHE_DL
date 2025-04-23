@@ -1,6 +1,6 @@
-from Environnement.annonce_suit import Annonce
-from Environnement.game import CoinceGame
-from Environnement.utils import Card, Rank, Suit
+from annonce_suit import Annonce
+from game import CoinceGame
+from utils import Card, Rank, Suit
 
 
 class MainCoinche:
