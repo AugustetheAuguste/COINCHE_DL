@@ -8,7 +8,20 @@ from DQNannonce import DQNAgent
 from stable_baselines3 import PPO
 
 class MainCoincheAI:
-    def __init__(self, state_size=68, action_size=60, training=True):
+
+    ASSET_POINTS = {
+        Rank.SEVEN: 0, Rank.EIGHT: 0, Rank.NINE: 14,
+        Rank.TEN: 10, Rank.JACK: 20, Rank.QUEEN: 3,
+        Rank.KING: 4, Rank.ACE: 11
+    }
+
+    FULL_NORMAL_POINTS = {
+        Rank.SEVEN: 0, Rank.EIGHT: 0, Rank.NINE: 0,
+        Rank.TEN: 10, Rank.JACK: 2, Rank.QUEEN: 3,
+        Rank.KING: 4, Rank.ACE: 19
+    }
+
+    def __init__(self, state_size=47, action_size=61, training=True):
         """
         Initialise le jeu et l'agent DQN.
         """
@@ -104,19 +117,23 @@ class MainCoincheAI:
 
         bid = self.bid[action]
         if bid not in legal_actions:
+            if not self.training:
+                print(f"Annonce invalide : {bid} pour le joueur {player}.")
             self.agent.remember(observation, action, -10, self.get_observation(player), False)
             bid = "Passe"
+
+        if not self.training:
+                print(f"Le joueur {player} a annoncé {bid}")
+                print([str(card) for card in self.game.players[player].get_card()])
 
         if bid != "Passe":
             # On utilise ici une couleur par défaut : "HEARTS"
             self.game.table.announce((bid[0], bid[1]), player)
-            if not self.training:
-                print(f"Le joueur {player} a annoncé {bid}")
-                print([str(card) for card in self.game.players[player].get_card()])
+            
         self.list_annonce[player] = (bid,observation,self.get_observation(player),self.game.announce_finish(player),action)
 
     def get_observation(self, player):
-        observation = np.zeros(68)
+        observation = np.zeros(47)
 
         # 1️⃣ Cartes en main (52 bits, one-hot)
         if isinstance(player, int):
@@ -132,32 +149,29 @@ class MainCoincheAI:
         
         for player in range(4):
             if player in self.list_annonce and self.list_annonce[player][0] != "Passe":
-                observation[56 + player*2] = self.list_annonce[player][0][0] / 160.0 # Normalisé
-                observation[56 + player*2 + 1] = self.suit_to_index.get(self.list_annonce[player][0][1], 0.0)
+                observation[36 + player*2] = self.list_annonce[player][0][0] / 160.0 # Normalisé
+                observation[36 + player*2 + 1] = self.suit_to_index.get(self.list_annonce[player][0][1], 0.0)
             else:
-                observation[56 + player*2] = 0
-                observation[56 + player*2 + 1] = 0
+                observation[36 + player*2] = 0
+                observation[36 + player*2 + 1] = 0
 
 
         # 3️⃣ Meilleure annonce actuelle
         current_bid = self.game.table.get_current_bid()
         if current_bid is not None:
-            observation[64] = current_bid.get_points() / 160.0  # Normalisé
-            observation[65] = self.suit_to_index.get(current_bid.get_trump_suit(), 0.0)
+            observation[44] = current_bid.get_points() / 160.0  # Normalisé
+            observation[45] = self.suit_to_index.get(current_bid.get_trump_suit(), 0.0)
         else:
-            observation[64] = 0
-            observation[65] = 0
-
-        # 4️⃣ Est-ce à mon tour ?
-        observation[66] = 1 if self.game.table.current_player == player else 0
+            observation[44] = 0
+            observation[45] = 0
 
         # 5️⃣ Est-ce que mon équipe a la meilleure annonce actuelle ?
         if current_bid is not None:
             bidder_team = self.game.players[current_bid.get_player()].get_team()
             my_team = self.game.players[player].get_team()
-            observation[67] = 1 if bidder_team == my_team else 0
+            observation[46] = 1 if bidder_team == my_team else 0
         else:
-            observation[67] = 0
+            observation[46] = 0
 
         return observation
 
@@ -170,7 +184,14 @@ class MainCoincheAI:
 
     def calculate_reward(self, player, bid_value):
         if bid_value == "P":
-            return 0  # Neutre si passe
+            carte = self.game.players[player].get_card()
+            jeu = 0
+            for i in carte:
+                jeu += (self.ASSET_POINTS[i.rank] + self.FULL_NORMAL_POINTS[i.rank])/2
+            if jeu > 50:
+                return -1
+            else:
+                return -0.1  # Neutre si passe
 
         last_bid = self.game.table.get_current_bid()
         if last_bid.get_player() != player:
@@ -188,7 +209,7 @@ class MainCoincheAI:
             return 5 - (overbid / 10)
         else:
             # Contrat raté : pénalité croissante avec l’écart
-            return -2 - (abs(overbid) / 10)
+            return -10 - (abs(overbid) / 10)
 
 
     def save_model(self, filepath="dqn_model.pth"):
@@ -275,39 +296,39 @@ class Modele_jeu:
         return action
     
 if __name__ == "__main__":
-    game_ai = MainCoincheAI()   
+    # game_ai = MainCoincheAI()   
 
-    episodes = 5000
-    games_per_episode = 10  # Nombre de parties par épisode
+    # episodes = 5000
+    # games_per_episode = 10  # Nombre de parties par épisode
 
-    print("Phase de training")
+    # print("Phase de training")
 
-    for episode in range(episodes):
-        if episode % 100 == 0:
-            print(f"Épisode {episode}/{episodes}")
+    # for episode in range(episodes):
+    #     if episode % 100 == 0:
+    #         print(f"Épisode {episode}/{episodes}")
 
-        for game_count in range(games_per_episode):
-            game_ai.start_game()
+    #     for game_count in range(games_per_episode):
+    #         game_ai.start_game()
 
-        # Entraîne le modèle avec l'expérience accumulée
-        game_ai.train_agent()
-        game_ai.agent.decay_epsilon()
+    #     # Entraîne le modèle avec l'expérience accumulée
+    #     game_ai.train_agent()
+    #     game_ai.agent.decay_epsilon()
 
-    # Test après entraînement
-    print("Phase de test (sans exploration)...")
-    game_ai.training = False
-    game_ai.start_game()
-
-    # Sauvegarde du modèle
-    game_ai.save_model("dqn_model.pth")
-
-    # # Crée l'instance de l'IA avec le training désactivé
-    # game_ai = MainCoincheAI(training=False)
-
-    # # Charge le modèle DQN déjà entraîné
-    # game_ai.agent.model.load_state_dict(torch.load("dqn_5K-10.pth", map_location=torch.device('cpu')))
-    # game_ai.agent.model.eval()  # Mode évaluation pour éviter le dropout, etc.
-
-    # # Lancer une partie avec affichage des annonces
-    # print("Test du modèle DQN pour les annonces...")
+    # # Test après entraînement
+    # print("Phase de test (sans exploration)...")
+    # game_ai.training = False
     # game_ai.start_game()
+
+    # # Sauvegarde du modèle
+    # game_ai.save_model("dqn_model.pth")
+
+    # Crée l'instance de l'IA avec le training désactivé
+    game_ai = MainCoincheAI(training=False)
+
+    # Charge le modèle DQN déjà entraîné
+    game_ai.agent.model.load_state_dict(torch.load("dqn_5K-10_cor.pth", map_location=torch.device('cpu')))
+    game_ai.agent.model.eval()  # Mode évaluation pour éviter le dropout, etc.
+
+    # Lancer une partie avec affichage des annonces
+    print("Test du modèle DQN pour les annonces...")
+    game_ai.start_game()

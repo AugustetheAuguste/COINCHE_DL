@@ -1,7 +1,7 @@
 import random
 from typing import List, Optional, Tuple
-from Environnement.player import Player
-from Environnement.utils import Card, Rank, Suit
+from player import Player
+from utils import Card, Rank, Suit
 
 
 class CoincheDeck:
@@ -178,6 +178,16 @@ class CoincheTable:
             self.set_first_card(card)
             self.set_best_card(card)
             self.set_player_win(player)
+        elif self.current_asset == "Full_ASSET":
+            if card.suit.name == self.FirstCard.suit.name:
+                if self.FULL_ASSET_POINTS[card.rank] > self.FULL_ASSET_POINTS[self.best_card.rank]:
+                    self.set_best_card(card)
+                    self.set_player_win(player)
+        elif self.current_asset == "No_ASSET":
+            if card.suit.name == self.FirstCard.suit.name:
+                if self.FULL_NORMAL_POINTS[card.rank] > self.FULL_NORMAL_POINTS[self.best_card.rank]:
+                    self.set_best_card(card)
+                    self.set_player_win(player)
         else:
             if card.suit.name == self.current_asset:
                 if self.get_best_card().suit.name != self.current_asset:

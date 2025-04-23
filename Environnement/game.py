@@ -1,7 +1,7 @@
-from Environnement.coinche import CoincheDeck, CoincheTable
-from Environnement.player import Player
-from Environnement.team import Team
-from Environnement.utils import Rank
+from coinche import CoincheDeck, CoincheTable
+from player import Player
+from team import Team
+from utils import Rank
 
 
 class CoinceGame:
@@ -163,13 +163,13 @@ class CoinceGame:
     
     def game_finish(self):
         for team in self.teams:
-            if team.get_game_score() >= 2000:
+            if team.get_game_score() >= 50:
                 return True
         return False
     
     def announce_finish(self, player):
-        # if self.table.current_bid is not None:
-        #     print(self.table.current_bid.get_player() , player)
+        if self.table.current_bid is not None:
+            print(self.table.current_bid.get_player() , player)
         if self.table.current_bid is not None and self.table.current_bid.get_player() == player:
             return True
         return False
