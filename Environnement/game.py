@@ -1,7 +1,7 @@
-from coinche import CoincheDeck, CoincheTable
-from player import Player
-from team import Team
-from utils import Rank
+from Environnement.coinche import CoincheDeck, CoincheTable
+from Environnement.player import Player
+from Environnement.team import Team
+from Environnement.utils import Rank
 
 
 class CoinceGame:

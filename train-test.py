@@ -1,10 +1,6 @@
-import gym
-import time
 import numpy as np
 from stable_baselines3 import PPO
-from modele_jeu_v2 import CoincheEnv
-from stable_baselines3.common.policies import ActorCriticPolicy
-from stable_baselines3.common.evaluation import evaluate_policy
+from Modele_ppo.modele_jeu_v2 import CoincheEnv
 
 def train_agent():
     """Entraîne l'IA à jouer à la Coinche."""
@@ -28,7 +24,7 @@ def train_agent():
     )
 
     print("Démarrage de l'entraînement...")
-    model.learn(total_timesteps=1000000, log_interval=None)  # Ajuster selon la puissance de calcul
+    model.learn(total_timesteps=1000, log_interval=None)  # Ajuster selon la puissance de calcul
     model.save("coinche_ia_v2")
     # for i in range(10):
     #     model.learn(total_timesteps=500_000)

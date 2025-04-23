@@ -1,10 +1,9 @@
 from random import randint
-import time
 import gym
 import numpy as np
 from gym import spaces
-from game import CoinceGame
-from utils import Card, Rank, Suit
+from Environnement.game import CoinceGame
+from Environnement.utils import Card, Rank, Suit
 from stable_baselines3 import PPO
 
 class CoincheEnv(gym.Env):
@@ -38,7 +37,7 @@ class CoincheEnv(gym.Env):
         self.game = CoinceGame()
         
         # Charger l'ancien modèle
-        self.old_model = PPO.load("mv2-4_1M_R")
+        self.old_model = PPO.load("Modele_ppo/mv2-4_1M_R")
         
         self.suit = ["SPADES", "HEARTS", "DIAMONDS", "CLUBS", "No_ASSET","Full_ASSET"]
         self.rank = ["7", "8", "9", "10", "J", "Q", "K", "A"]
