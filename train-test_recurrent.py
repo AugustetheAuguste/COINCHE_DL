@@ -32,7 +32,7 @@ def train_agent():
     )
 
     print("Démarrage de l'entraînement...")
-    model.learn(total_timesteps=1000, tb_log_name="PPO_1", log_interval=None)  # Ajuster selon la puissance de calcul
+    model.learn(total_timesteps=1000000, tb_log_name="PPO_1", log_interval=None)  # Ajuster selon la puissance de calcul
     model.save("coinche_ia_v2")
     # for i in range(10):
     #     model.learn(total_timesteps=500_000)
